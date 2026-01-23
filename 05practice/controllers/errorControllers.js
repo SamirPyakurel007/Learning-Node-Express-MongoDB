@@ -21,6 +21,9 @@ const globalErrorHandler = (err, req, res, next) => {
   err.status = err.status || "error";
 
   let error = { ...err };
+  error.message = err.message;
+  error.name = err.name;
+
   if (error.name === "CastError") {
     error = handleCastErrorDB(error);
   }
