@@ -1,3 +1,4 @@
+const { promisify } = require("util");
 const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
 const catchAsync = require("../utils/catchAsync");
@@ -15,6 +16,8 @@ exports.signup = catchAsync(async (req, res, next) => {
     email: req.body.email,
     password: req.body.password,
     passwordConfirm: req.body.passwordConfirm,
+    role: req.body.role,
+    passwordChangedAt: req.body.passwordChangedAt,
   });
 
   const token = signToken(newUser._id);
@@ -50,3 +53,60 @@ exports.login = catchAsync(async (req, res, next) => {
     message: "Successfully logged in.",
   });
 });
+
+exports.protect = catchAsync(async (req, res, next) => {
+  // 1.get the token and check if exists
+  let token;
+
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer")
+  ) {
+    token = req.headers.authorization.split(" ")[1];
+  }
+
+  if (!token) {
+    return next(
+      new AppError(
+        "You are not logged in. Please log in to get an access",
+        401,
+      ),
+    );
+  }
+
+  //2.verify the token
+  const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+
+  //3. check user still exists
+  const freshUser = await User.findById(decoded.id);
+  if (!freshUser) {
+    return next(new AppError("User with this token does not exist", 401));
+  }
+
+  //4.check if user changed password after the token was issued
+  const isPasswordChanged = freshUser.passwordChangedAfterTokenIssued(
+    decoded.iat,
+  );
+  if (isPasswordChanged) {
+    return next(
+      new AppError(
+        "Invalid token due to password change. please log in again to get access",
+        401,
+      ),
+    );
+  }
+
+  req.user = freshUser;
+  next();
+});
+
+exports.restrictTo = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return next(
+        new AppError("You are not allowed to perform this action", 403),
+      );
+    }
+    next();
+  };
+};

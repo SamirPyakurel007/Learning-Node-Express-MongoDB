@@ -8,7 +8,6 @@ class APIFeatures {
     const queryObj = { ...this.queryString };
     const excludedFields = ["sort", "limit", "page", "fields"];
     excludedFields.forEach((el) => delete queryObj[el]);
-    console.log(queryObj);
 
     // {difficulty: 'easy', duration : {$gte : 5}} what we want
     // { duration: { gte: '5' }, difficulty: 'easy' } what we get
