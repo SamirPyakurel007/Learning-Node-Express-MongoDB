@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const User = require("./userModel");
 
 const tourSchema = new mongoose.Schema(
   {
@@ -72,6 +73,34 @@ const tourSchema = new mongoose.Schema(
     startDates: {
       type: [Date],
     },
+    secretTour: {
+      type: Boolean,
+      default: false,
+    },
+    startLocation: {
+      type: {
+        type: String,
+        default: "Point",
+        enum: ["Point"],
+      },
+      coordinates: [Number],
+      address: String,
+      description: String,
+    },
+    locations: [
+      {
+        type: {
+          type: String,
+          default: "Point",
+          enum: ["Point"],
+        },
+        coordinates: [Number],
+        address: String,
+        description: String,
+        day: Number,
+      },
+    ],
+    guides: [{ type: mongoose.Schema.ObjectId, ref: "User" }],
   },
   {
     toJSON: {
@@ -82,6 +111,21 @@ const tourSchema = new mongoose.Schema(
     },
   },
 );
+
+//for embedding users (tour guides) but not optimal use referencing
+// tourSchema.pre("save", async function (next) {
+//   const guidesPromise = this.guides.map(async (id) => await User.findById(id));
+//   this.guides = await Promise.all(guidesPromise);
+//   next();
+// });
+
+tourSchema.pre(/^find/, function (next) {
+  this.populate({
+    path: "guides",
+    select: "-__v -passwordChangedAt",
+  });
+  next();
+});
 
 tourSchema.virtual("durationWeeks").get(function () {
   return this.duration / 7;
