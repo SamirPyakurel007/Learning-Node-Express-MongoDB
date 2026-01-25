@@ -28,7 +28,7 @@ exports.createReview = catchAsync(async (req, res, next) => {
   res.status(201).json({
     status: "success",
     data: {
-      newReview,
+      review: newReview,
     },
   });
 });

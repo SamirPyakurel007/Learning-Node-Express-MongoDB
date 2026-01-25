@@ -112,6 +112,17 @@ const tourSchema = new mongoose.Schema(
   },
 );
 
+tourSchema.virtual("durationWeeks").get(function () {
+  return this.duration / 7;
+});
+
+//virtual populate
+tourSchema.virtual("reviews", {
+  ref: "Review",
+  foreignField: "tour",
+  localField: "_id",
+});
+
 //for embedding users (tour guides) but not optimal use referencing
 // tourSchema.pre("save", async function (next) {
 //   const guidesPromise = this.guides.map(async (id) => await User.findById(id));
@@ -125,10 +136,6 @@ tourSchema.pre(/^find/, function (next) {
     select: "-__v -passwordChangedAt",
   });
   next();
-});
-
-tourSchema.virtual("durationWeeks").get(function () {
-  return this.duration / 7;
 });
 
 const Tour = mongoose.model("Tour", tourSchema);
